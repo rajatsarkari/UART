@@ -1,54 +1,54 @@
 //FULL DUPLEX UART
 module UART(CnSin, CnSout, TxD, RxD, TxData, RxData, clock, reset);
-	integer 			i, j, k;
+	integer 			i, j, k;	//COUNTERS
 	//Input Output Declarations
-	input 	[7:0] 			CnSin, RxData;
-	output 	[7:0]			CnSout, TxData;
-	input				RxD, reset, clock;
-	output 				TxD; 	
+	input 	[7:0] 			CnSin, RxData;					//INPUT STATUS WORD AND INPUT PARALLEL DATA
+	output 	[7:0]			CnSout, TxData;					//OUTPUT STATUS WORD AND OUTPUT PARALLEL DATA
+	input				RxD, reset, clock;				//INPUT SERIAL DATA, RESETn AND CLOCK 
+	output 				TxD; 						//OUTPUT SERIAL DATA
 	//Reg Declarations
-	reg				TxDtemp;
-	reg 	[7:0]			TxData, TxDatatemp;
-	reg 				Perr, DORerr, Ferr, TxC, RxC, TxNine;
-	reg  	[2:0]			Txstate, Rxstate;
-	wire 	[2:0] 			CharSize;
-	wire				TxE, RxE, Stopbits, PMode, RxNine, NineEn;
+	reg				TxDtemp;					//TEMPORARY REG FOR TXD
+	reg 	[7:0]			TxData, TxDatatemp;				
+	reg 				Perr, DORerr, Ferr, TxC, RxC, TxNine;		//CONTROL VARIABLES	
+	reg  	[2:0]			Txstate, Rxstate;				//STATE VARIABLES
+	wire 	[2:0] 			CharSize;					//TRANSFER SIZE
+	wire				TxE, RxE, Stopbits, PMode, RxNine, NineEn;	//CONTROL SIGNALS
 	//Input Assignments
-	assign TxE 		= 	CnSin[0];
-	assign RxE 		=	CnSin[1];
-	assign Stopbits 	= 	CnSin[2];
-	assign PMode    	=	CnSin[3];
-	assign RxNine 		= 	CnSin[4];
-	assign CharSize		=	{1'b0,CnSin[6:5]};
-	assign NineEn		= 	CnSin[7];
+	assign TxE 		= 	CnSin[0];					//TRANSMITTER ENABLE
+	assign RxE 		=	CnSin[1];					//RECEIVER ENABLE
+	assign Stopbits 	= 	CnSin[2];					//SIZE OF STOPBITS
+	assign PMode    	=	CnSin[3];					//PARITY MODE	
+	assign RxNine 		= 	CnSin[4];					//INPUT NINTH BIT
+	assign CharSize		=	{1'b0,CnSin[6:5]};				//TRANSFER SIZE
+	assign NineEn		= 	CnSin[7];					//NINTH BIT ENABLE
 	//Output Assignments
-	assign CnSout[0]	=	Perr;
-	assign CnSout[1]	=	DORerr;
-	assign CnSout[2]        =       Ferr;
-	assign CnSout[3]        =       TxC;
-	assign CnSout[4]        =       RxC;	
-	assign CnSout[5]        =       TxNine;
-	assign TxD		= 	TxDtemp;
+	assign CnSout[0]	=	Perr;						//PARITY ERROR
+	assign CnSout[1]	=	DORerr;						//DATA OVERRUN ERROR
+	assign CnSout[2]        =       Ferr;						//FRAME ERROR
+	assign CnSout[3]        =       TxC;						//TRANSMISSION COMPLETE
+	assign CnSout[4]        =       RxC;						//RECEPTION COMPLETE
+	assign CnSout[5]        =       TxNine;						//OUTPUT NINTH BIT
+	assign TxD		= 	TxDtemp;					//SERIAL OUTPUT DATA
 	//Parameters
-	parameter 	TxIDLE 		= 3'b000, 
+	parameter 	TxIDLE 		= 3'b000, 					//TRANSMITTER STATES
 			TxSEND_start 	= 3'b001,
 			TxSEND_data 	= 3'b010,
 			TxNINEBIT 	= 3'b011,
 			TxPARITY 	= 3'b100,
 			TxSTOPBIT 	= 3'b101,
 			TxDONE 		= 3'b110;
-	parameter 	RxIDLE 		= 3'b000,
+	parameter 	RxIDLE 		= 3'b000,					//RECEIVER STATES
 			RxSTART		= 3'b001,
 			RxRECEIVE 	= 3'b010, 
 			RxPARITY 	= 3'b011, 
 			RxSTOPBIT 	= 3'b100, 
 			RxDONE 		= 3'B101; 
-	parameter 	start  		= 1'b0;
+	parameter 	start  		= 1'b0;						//START BIT
 	//Operations
 	always@(posedge clock or negedge reset)
 		//Outer Parallel Block
 		fork
-			if(!reset) 
+			if(!reset) 							//INITIALIZATION
 			fork//Inner Parallel Block 
 				Perr		= 0;
 				DORerr		= 0;
@@ -60,7 +60,7 @@ module UART(CnSin, CnSout, TxD, RxD, TxData, RxData, clock, reset);
 				TxDtemp    	= 0;
 				Txstate 	= TxIDLE;
 				Rxstate 	= RxIDLE;
-			join//Inner Parallel block Ends
+			join//Inner Parallel block Ends					//DUPLEX ACTION
 			else 
 			fork//Inner Parallel Block 
 				if(TxE)//Transmitter Section
